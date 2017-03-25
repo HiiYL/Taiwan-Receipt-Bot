@@ -11,3 +11,4 @@ pyocr
 Pillow
 numpy
 python-opencv
+flask_sqlalchemy
