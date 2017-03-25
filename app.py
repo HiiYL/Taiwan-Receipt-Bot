@@ -11,7 +11,7 @@ import cv2
 import sys
 
 import re
-p = re.compile('^[A-Z][A-Z].+[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$')
+p = re.compile('^.*[A-Z]+[^0-9]*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][^0-9]*$')
 
 from PIL import Image
 import requests
