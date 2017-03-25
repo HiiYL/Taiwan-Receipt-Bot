@@ -173,6 +173,21 @@ def webhook():
                         try:
                             print(text)
                             filtered = [line for line in text.split('\n') if line.strip() and p.match(line)][0]
+                            items_to_remove = 0
+
+                            
+                            for i in reversed(filtered):
+                                if i.isdigit():
+                                    break
+                                else:
+                                    items_to_remove = items_to_remove + 1
+
+                            if items_to_remove > 0:
+                                print("[!] Removing {} invalid non digit character from end of string".format(items_to_remove))
+
+                            for i in range(items_to_remove):
+                                filtered = filtered[:-1]
+
                             filtered_digits_only = re.sub("\D", "", filtered)
 
 
