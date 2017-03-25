@@ -10,3 +10,4 @@ wsgiref
 pyocr
 Pillow
 numpy
+python-opencv
