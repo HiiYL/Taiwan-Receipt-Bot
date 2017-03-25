@@ -8,4 +8,4 @@ itsdangerous
 requests
 wsgiref
 pyocr
-PIL
+Pillow
