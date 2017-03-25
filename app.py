@@ -43,7 +43,7 @@ print("Will use lang '%s'" % (lang))
 # to use.
 
 
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
 database_dir = 'database/'
 
 app = Flask(__name__)
@@ -156,10 +156,19 @@ def webhook():
                         # print(type(image))
 
                         ## Preprocessing
-                        image = image.convert('L')
+                        # image = image.convert('L')
                         image = np.array(image)
                         # image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-                        image = clahe.apply(image)
+                        # image = cv2.resize()
+
+                        l, a, b = cv2.split(lab)
+
+                        cl = clahe.apply(l)
+                        limg = cv2.merge((cl,a,b))
+
+                        image = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+                        # image = clahe.apply(image)
                         
                         image = Image.fromarray(image)
 
@@ -175,7 +184,7 @@ def webhook():
                             filtered = [line for line in text.split('\n') if line.strip() and p.match(line)][0]
                             items_to_remove = 0
 
-                            
+
                             for i in reversed(filtered):
                                 if i.isdigit():
                                     break
