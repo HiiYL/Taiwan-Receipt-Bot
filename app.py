@@ -10,8 +10,6 @@ import numpy as np
 import cv2
 import sys
 
-import pytesseract
-
 import re
 p = re.compile('^[A-Z][A-Z].+[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$')
 
