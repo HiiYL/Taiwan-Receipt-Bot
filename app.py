@@ -21,7 +21,31 @@ from io import BytesIO
 
 from flask_sqlalchemy import SQLAlchemy
 
+import pyocr
+import pyocr.builders
 
+tools = pyocr.get_available_tools()
+if len(tools) == 0:
+    print("No OCR tool found")
+    sys.exit(1)
+# The tools are returned in the recommended order of usage
+
+# The tools are returned in the recommended order of usage
+tool = tools[0]
+print("Will use tool '%s'" % (tool.get_name()))
+# Ex: Will use tool 'libtesseract'
+
+langs = tool.get_available_languages()
+print("Available languages: %s" % ", ".join(langs))
+lang = langs[0]
+print("Will use lang '%s'" % (lang))
+# Ex: Will use lang 'fra'
+# Note that languages are NOT sorted in any way. Please refer
+# to the system locale settings for the default language
+# to use.
+
+
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 database_dir = 'database/'
 
 app = Flask(__name__)
@@ -130,8 +154,26 @@ def webhook():
                         send_message(sender_id, "Give me a moment while i process the image...")
                         image_url = messaging_event["message"]["attachments"][0]["payload"]["url"]
                         image = url_to_image(image_url)
-                        text = pytesseract.image_to_string(image)
+
+                        # print(type(image))
+
+                        ## Preprocessing
+                        image = image.convert('L')
+                        image = np.array(image)
+                        # image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+                        image = clahe.apply(image)
+                        
+                        image = Image.fromarray(image)
+
+                        # th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+                        # text = pytesseract.image_to_string(image)
+                        text = tool.image_to_string(
+                            image,
+                            lang=lang,
+                            builder=pyocr.builders.TextBuilder()
+                        )
                         try:
+                            print(text)
                             filtered = [line for line in text.split('\n') if line.strip() and p.match(line)][0]
                             filtered_digits_only = re.sub("\D", "", filtered)
 
@@ -174,7 +216,7 @@ def webhook():
                                 user = User(sender_id)
                                 db.session.add(user)
                                 db.session.commit()
-                                send_message(sender_id, "Hi there new user")
+                                send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
                             else:
                                 if user.lottery_numbers is None:
                                     send_message(sender_id, "You have not submitted any lottery numbers")
