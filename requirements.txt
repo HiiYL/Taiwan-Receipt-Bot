@@ -6,7 +6,6 @@ click
 gunicorn
 itsdangerous
 requests
-wsgiref
 pyocr
 Pillow
 numpy
