@@ -303,7 +303,7 @@ def log(message):  # simple wrapper for logging to stdout on heroku
 
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=False, port=5001)
 
 
                     # sender_id = messaging_event["sender"]["id"]        # the facebook ID of the person sending you the message
