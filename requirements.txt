@@ -9,5 +9,5 @@ requests
 pyocr
 Pillow
 numpy
-python-opencv
+opencv-python
 flask_sqlalchemy
