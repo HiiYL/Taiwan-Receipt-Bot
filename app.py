@@ -11,7 +11,9 @@ import cv2
 import sys
 
 import re
-p = re.compile('^.*[A-Z]+[^0-9]*[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][^0-9]*$')
+p = re.compile('^.*[A-Z]+[^0-9]*[oOlI0-9][oOlI0-9][oOlI0-9][oOlI0-9][oOlI0-9][oOlI0-9][oOlI0-9][oOlI0-9][^0-9]*$')
+alphabet_only = re.compile('[^a-zA-Z]')
+
 
 from PIL import Image
 import requests
@@ -160,13 +162,14 @@ def webhook():
                         image = np.array(image)
                         # image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
                         # image = cv2.resize()
+                        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
                         l, a, b = cv2.split(lab)
 
                         cl = clahe.apply(l)
                         limg = cv2.merge((cl,a,b))
 
-                        image = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+                        image = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
 
                         # image = clahe.apply(image)
                         
@@ -185,8 +188,9 @@ def webhook():
                             items_to_remove = 0
 
 
+                            special_cases = ['o', 'O', 'l', 'I']
                             for i in reversed(filtered):
-                                if i.isdigit():
+                                if i.isdigit() or (i in special_cases):
                                     break
                                 else:
                                     items_to_remove = items_to_remove + 1
@@ -196,6 +200,14 @@ def webhook():
 
                             for i in range(items_to_remove):
                                 filtered = filtered[:-1]
+
+                            numbers_only = filtered[-8:]
+                            numbers_only = numbers_only.replace('o','0').replace('O','0').replace('l','1').replace('I','1')
+
+                            alphabets = filtered[:-8]
+                            alphabets = alphabet_only.sub('', alphabets) + " "
+
+                            filtered =  alphabets + numbers_only
 
                             filtered_digits_only = re.sub("\D", "", filtered)
 
