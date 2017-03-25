@@ -205,7 +205,7 @@ def webhook():
                             numbers_only = numbers_only.replace('o','0').replace('O','0').replace('l','1').replace('I','1')
 
                             alphabets = filtered[:-8]
-                            alphabets = alphabet_only.sub('', alphabets) + " "
+                            alphabets = alphabet_only.sub('', alphabets)[-2:] + " "
 
                             filtered =  alphabets + numbers_only
 
