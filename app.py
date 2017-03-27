@@ -20,33 +20,42 @@ import requests
 from io import BytesIO
 
 from flask_sqlalchemy import SQLAlchemy
+import datetime
 
-import pyocr
-import pyocr.builders
+# import pyocr
+# import pyocr.builders
 
-tools = pyocr.get_available_tools()
-if len(tools) == 0:
-    print("No OCR tool found")
-    sys.exit(1)
-# The tools are returned in the recommended order of usage
+# tools = pyocr.get_available_tools()
+# if len(tools) == 0:
+#     print("No OCR tool found")
+#     sys.exit(1)
+# # The tools are returned in the recommended order of usage
 
-# The tools are returned in the recommended order of usage
-tool = tools[0]
-print("Will use tool '%s'" % (tool.get_name()))
-# Ex: Will use tool 'libtesseract'
+# # The tools are returned in the recommended order of usage
+# tool = tools[0]
+# print("Will use tool '%s'" % (tool.get_name()))
+# # Ex: Will use tool 'libtesseract'
 
-langs = tool.get_available_languages()
-print("Available languages: %s" % ", ".join(langs))
-lang = langs[0]
-print("Will use lang '%s'" % (lang))
-# Ex: Will use lang 'fra'
-# Note that languages are NOT sorted in any way. Please refer
-# to the system locale settings for the default language
-# to use.
+# langs = tool.get_available_languages()
+# print("Available languages: %s" % ", ".join(langs))
+# lang = langs[0]
+# print("Will use lang '%s'" % (lang))
+# # Ex: Will use lang 'fra'
+# # Note that languages are NOT sorted in any way. Please refer
+# # to the system locale settings for the default language
+# # to use.
+
+from tesserocr import PyTessBaseAPI
+import tesserocr
 
 
-clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+api = tesserocr.PyTessBaseAPI()
+api.SetVariable("tessedit_char_whitelist", "ABCDEFGHLMNOPQRSTUVWXYZ0123456789- ")
+
+
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 database_dir = 'database/'
+snapshots_dir = 'receipt_snapshots/'
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
@@ -77,13 +86,18 @@ class Lottery(db.Model):
     snapshot_path = db.Column(db.String(120))
     lottery_fullcode = db.Column(db.String(20))
     lottery_digit = db.Column(db.String(20))
+    created_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, lottery_fullcode, lottery_digit):
         self.lottery_fullcode = lottery_fullcode
         self.lottery_digit = lottery_digit
 
+    def setSnapshot(snapshot_filename):
+        self.snapshot_path = snapshot_filename
+
+
     def __repr__(self):
-        return '<Lottery {}> {}'.format(self.id, self.lottery_digit)
+        return '<Lottery {}> {} - {}'.format(self.id, self.lottery_digit, self.created_date)
 
 
 
@@ -155,35 +169,57 @@ def webhook():
                         image_url = messaging_event["message"]["attachments"][0]["payload"]["url"]
                         image = url_to_image(image_url)
 
+                        width, height = image.size
+
+                        # print("DPI = {}".format(image.info['dpi']))
+
+                        # image = image.resize((width * 2, height * 2))
+
                         # print(type(image))
 
                         ## Preprocessing
                         # image = image.convert('L')
                         image = np.array(image)
-                        # image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-                        # image = cv2.resize()
-                        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
-                        l, a, b = cv2.split(lab)
+                        image = cv2.resize(image, (width * 2, height * 2))
 
-                        cl = clahe.apply(l)
-                        limg = cv2.merge((cl,a,b))
 
-                        image = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+                        image = cv2.fastNlMeansDenoisingColored(image,None,10,10,7,21)
 
-                        # image = clahe.apply(image)
+                        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+                        # image = cv2.GaussianBlur(image,(5,5),0)
+                        # _,image = cv2.threshold(image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+
+                        
+                        # # image = cv2.resize()
+                        # lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+
+                        # l, a, b = cv2.split(lab)
+
+                        # cl = clahe.apply(l)
+                        # limg = cv2.merge((cl,a,b))
+
+                        # image = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
+
+                        image = clahe.apply(image)
                         
                         image = Image.fromarray(image)
 
-                        # th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-                        # text = pytesseract.image_to_string(image)
-                        text = tool.image_to_string(
-                            image,
-                            lang=lang,
-                            builder=pyocr.builders.TextBuilder()
-                        )
+                        snapshot_path = os.path.join(snapshots_dir,
+                         "test2.jpg")
+                        image.save(snapshot_path)
+                        api.SetImage(image)
+                        text = api.GetUTF8Text()
+
+                        print(text)
+                        # text = tool.image_to_string(
+                        #     image,
+                        #     lang=lang,
+                        #     builder=pyocr.builders.TextBuilder()
+                        # )
                         try:
-                            print(text)
                             filtered = [line for line in text.split('\n') if line.strip() and p.match(line)][0]
                             items_to_remove = 0
 
@@ -228,6 +264,9 @@ def webhook():
                             if lottery is None:
                                 lottery = Lottery(filtered, filtered_digits_only)
                                 lottery.users.append(user)
+
+                                lottery.snapshot_path = image_url
+
                                 db.session.add(lottery)
                                 send_message(sender_id, "Your receipt lottery code has been registered successfully.")
                             else:
@@ -244,7 +283,25 @@ def webhook():
 
                     elif "text" in messaging_event["message"]:
                         message_text = messaging_event["message"]["text"]
-                        if "list" in message_text.lower():
+
+                        if "image" in message_text.lower():
+                            user = User.query.get(sender_id)
+                            if user is None:
+                                user = User(sender_id)
+                                db.session.add(user)
+                                db.session.commit()
+                                send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
+                            else:
+                                if user.lottery_numbers is None:
+                                    send_message(sender_id, "You have not submitted any lottery numbers")
+                                else:
+                                    response = "Here are the lottery numbers you have submitted so far \n"
+                                    for lottery_number in user.lottery_numbers:
+                                        send_message(sender_id,lottery_number.lottery_fullcode)
+                                        send_image(sender_id, lottery_number.snapshot_path)
+
+
+                        elif "list" in message_text.lower():
                             user = User.query.get(sender_id)
                             if user is None:
                                 user = User(sender_id)
@@ -289,6 +346,33 @@ def send_message(recipient_id, message_text):
         },
         "message": {
             "text": message_text
+        }
+    })
+    r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
+    if r.status_code != 200:
+        log(r.status_code)
+        log(r.text)
+
+
+def send_image(recipient_id, image_path):
+    log("sending image to {recipient}: {path}".format(recipient=recipient_id, path=image_path))
+    params = {
+        "access_token": os.environ["PAGE_ACCESS_TOKEN"]
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = json.dumps({
+        "recipient": {
+            "id": recipient_id
+        },
+        "message": {
+            "attachment":{
+              "type":"image",
+              "payload":{
+                "url":image_path
+              }
+            }
         }
     })
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
