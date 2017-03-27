@@ -173,7 +173,7 @@ def webhook():
 
                         # print("DPI = {}".format(image.info['dpi']))
 
-                        # image = image.resize((width * 2, height * 2))
+                        image = image.resize((width * 2, height * 2))
 
                         # print(type(image))
 
@@ -181,29 +181,26 @@ def webhook():
                         # image = image.convert('L')
                         image = np.array(image)
 
-                        image = cv2.resize(image, (width * 2, height * 2))
+                        # image = cv2.resize(image, (width * 2, height * 2))
 
 
                         image = cv2.fastNlMeansDenoisingColored(image,None,10,10,7,21)
 
-                        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+                        # image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
                         # image = cv2.GaussianBlur(image,(5,5),0)
                         # _,image = cv2.threshold(image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
+                        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
-                        
-                        # # image = cv2.resize()
-                        # lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+                        l, a, b = cv2.split(lab)
 
-                        # l, a, b = cv2.split(lab)
+                        cl = clahe.apply(l)
+                        limg = cv2.merge((cl,a,b))
 
-                        # cl = clahe.apply(l)
-                        # limg = cv2.merge((cl,a,b))
+                        image = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
 
-                        # image = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)
-
-                        image = clahe.apply(image)
+                        # image = clahe.apply(image)
                         
                         image = Image.fromarray(image)
 

@@ -6,8 +6,8 @@ click
 gunicorn
 itsdangerous
 requests
-pyocr
 Pillow
 numpy
 opencv-python
 flask_sqlalchemy
+tesserocr
