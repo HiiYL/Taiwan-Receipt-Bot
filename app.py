@@ -166,31 +166,6 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]        # the facebook ID of the person sending you the message
                     recipient_id = messaging_event["recipient"]["id"]  # the recipient's ID, which should be your page's facebook ID
                     # message_text = messaging_event["message"]["text"]  # the message's text
-
-                    if "acceptable" in message.lower():
-                        send_message(sender_id, "Glad to be of assistance :)")
-                    elif "wrong" in message.lower():
-
-                        payload = message["quick_reply"]["payload"]
-                        Lottery.query.filter_by(lottery_digit=filtered_digits_only).first().delete()
-                        db.session.commit()
-
-                        send_message_with_quickreply(sender_id,
-                         "I do apologize, would you like to try again?",
-                         [
-                             {
-                                "content_type":"text",
-                                "title":"Try Again",
-                                "payload":payload
-                              },
-                              {
-                                "content_type":"text",
-                                "title":"Nevermind",
-                                "payload":"None"
-                              }
-                          ]
-                        )
-
                     if "attachments" in messaging_event["message"]:
                         send_message(sender_id, "Give me a moment while i process the image...")
                         image_url = messaging_event["message"]["attachments"][0]["payload"]["url"]
@@ -324,7 +299,30 @@ def webhook():
                     elif "text" in messaging_event["message"]:
                         message_text = messaging_event["message"]["text"]
                         user = User.query.get(sender_id)
-                        if user is None:
+
+                        if "acceptable" in message_text.lower():
+                            send_message(sender_id, "Glad to be of assistance :)")
+                        elif "wrong" in message_text.lower():
+                            payload = message_text["quick_reply"]["payload"]
+                            Lottery.query.filter_by(lottery_digit=filtered_digits_only).first().delete()
+                            db.session.commit()
+
+                            send_message_with_quickreply(sender_id,
+                             "I do apologize, would you like to try again?",
+                             [
+                                 {
+                                    "content_type":"text",
+                                    "title":"Try Again",
+                                    "payload":payload
+                                  },
+                                  {
+                                    "content_type":"text",
+                                    "title":"Nevermind",
+                                    "payload":"None"
+                                  }
+                              ]
+                            )
+                        elif user is None:
                             user = User(sender_id)
                             db.session.add(user)
                             db.session.commit()
