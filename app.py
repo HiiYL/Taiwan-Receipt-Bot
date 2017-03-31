@@ -349,7 +349,7 @@ def webhook():
                                             break
                                         for i in range(6):
                                             if (prize[i:] == current_code[i:]):
-                                                send_message(sender_id, "Congratulations, You have won the {}th prize amounting to {}!".format(i + 1, first_prize_earnings[i] ))
+                                                send_message(sender_id, "Congratulations, You have won the {}th prize amounting to {} TWD!".format(i + 1, first_prize_earnings[i] ))
                                                 send_message(sender_id,lottery_number.lottery_fullcode)
                                                 send_image(sender_id, lottery_number.snapshot_path)
                                                 sum_winnings += first_prize_earnings[i]
@@ -361,9 +361,9 @@ def webhook():
                                         send_image(sender_id, lottery_number.snapshot_path)
                                         sum_winnings += 200
                             if sum_winnings > 0:
-                                send_image(sender_id, "In total, you have won {} :)".format(sum_winnings))
+                                send_message(sender_id, "In total, you have won {} TWD :)".format(sum_winnings))
                             else:
-                                send_image(sender_id, "Unfortunately you did not win anything :(")
+                                send_message(sender_id, "Unfortunately you did not win anything :(")
                         else:
                             send_message(sender_id,
                              "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
