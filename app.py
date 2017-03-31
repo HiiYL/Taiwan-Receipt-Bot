@@ -318,19 +318,11 @@ def webhook():
 
                             consolation_prize = codes[3]
                             send_message(sender_id, 
-                                "All data stored, these are the information i have retrieved: \n \
-                                 Extra Special Award \n \
-                                 {} \n \
-                                 Special Award \n \
-                                 {} \n \
-                                 First Place \n \
-                                 {} {} {} \n \
-                                 Consolation Prize \n \
-                                 {}".format(
-                                    extra_special_prize,
-                                     special_prize,
-                                     first_prize[0], first_prize[1], first_prize[2],
-                                     consolation_prize))
+                                '\n'.join("All data stored, these are the information i have retrieved:",
+                                    "Extra Special Award",extra_special_prize,
+                                    "Special Award", special_prize,
+                                    "First Place", ' '.join(first_prize[0], first_prize[1], first_prize[2]),
+                                    "Consolation Prize", consolation_prize))
 
                             sum_winnings = 0
 
@@ -356,14 +348,6 @@ def webhook():
                                         send_message(sender_id, "Congratulations, YOU have won the consolation prize!".format(i + 1))
                                         send_message(sender_id,lottery_number.lottery_fullcode)
                                         send_image(sender_id, lottery_number.snapshot_path)
-
-
-
-
-
-
-
-
                         else:
                             send_message(sender_id,
                              "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
