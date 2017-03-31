@@ -291,10 +291,11 @@ def webhook():
                         elif user.lottery_numbers is None:
                             send_message(sender_id, "You have not submitted any lottery numbers.")
                             send_message(sender_id,
-                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
+                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \
                               List  - List receipts submit so far \
                               Image - List receipts and associated images \
-                              Check - Check your submitted receipts to see if you have won something")
+                              Check - Check your submitted receipts to see if you have won something \
+                              Purge - Remove receipts that have expired ( more than 4 months old ) ")
                         elif "image" in message_text.lower():
                             response = "Here are the lottery numbers you have submitted so far \n"
                             for lottery_number in user.lottery_numbers:
@@ -366,10 +367,11 @@ def webhook():
                                 send_message(sender_id, "Unfortunately you did not win anything :(")
                         else:
                             send_message(sender_id,
-                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
+                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \
                               List  - List receipts submit so far \
                               Image - List receipts and associated images \
-                              Check - Check your submitted receipts to see if you have won something")
+                              Check - Check your submitted receipts to see if you have won something \
+                              Purge - Remove receipts that have expired ( more than 4 months old ) ")
 
 
 
