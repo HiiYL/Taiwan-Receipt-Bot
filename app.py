@@ -321,7 +321,7 @@ def webhook():
                                 '\n'.join("All data stored, these are the information i have retrieved:",
                                     "Extra Special Award",extra_special_prize,
                                     "Special Award", special_prize,
-                                    "First Place", ' '.join(first_prize[0], first_prize[1], first_prize[2]),
+                                    "First Place", ' '.join([first_prize[0], first_prize[1], first_prize[2]]),
                                     "Consolation Prize", consolation_prize))
 
                             sum_winnings = 0
