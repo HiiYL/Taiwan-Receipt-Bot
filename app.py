@@ -282,43 +282,29 @@ def webhook():
 
                     elif "text" in messaging_event["message"]:
                         message_text = messaging_event["message"]["text"]
-                        if user.lottery_numbers is None:
-                            send_message(sender_id, "You have not submitted any lottery numbers")
+                        user = User.query.get(sender_id)
+                        if user is None:
+                            user = User(sender_id)
+                            db.session.add(user)
+                            db.session.commit()
+                            send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
+                        elif user.lottery_numbers is None:
+                            send_message(sender_id, "You have not submitted any lottery numbers.")
                             send_message(sender_id,
                              "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
                               List  - List receipts submit so far \
                               Image - List receipts and associated images \
                               Check - Check your submitted receipts to see if you have won something")
                         elif "image" in message_text.lower():
-                            user = User.query.get(sender_id)
-                            if user is None:
-                                user = User(sender_id)
-                                db.session.add(user)
-                                db.session.commit()
-                                send_message(sender_id,
-                                 "Hi there new user, submit images of receipts to get started. \n \
-                                  For a list of commands, type help ")
-                            else:
-                                if user.lottery_numbers is None:
-                                    send_message(sender_id, "You have not submitted any lottery numbers")
-                                else:
-                                    response = "Here are the lottery numbers you have submitted so far \n"
-                                    for lottery_number in user.lottery_numbers:
-                                        send_message(sender_id,lottery_number.lottery_fullcode)
-                                        send_image(sender_id, lottery_number.snapshot_path)
-
+                            response = "Here are the lottery numbers you have submitted so far \n"
+                            for lottery_number in user.lottery_numbers:
+                                send_message(sender_id,lottery_number.lottery_fullcode)
+                                send_image(sender_id, lottery_number.snapshot_path)
                         elif "list" in message_text.lower():
-                            user = User.query.get(sender_id)
-                            if user is None:
-                                user = User(sender_id)
-                                db.session.add(user)
-                                db.session.commit()
-                                send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
-                            else:
-                                response = "Here are the lottery numbers you have submitted so far \n"
-                                for lottery_number in user.lottery_numbers:
-                                    response += (lottery_number.lottery_fullcode + "\n")
-                                send_message(sender_id, response)
+                            response = "Here are the lottery numbers you have submitted so far \n"
+                            for lottery_number in user.lottery_numbers:
+                                response += (lottery_number.lottery_fullcode + "\n")
+                            send_message(sender_id, response)
                         elif "check" in message_text.lower():
 
                             send_message(sender_id, "No problem, i will now check if you have won anything...")
