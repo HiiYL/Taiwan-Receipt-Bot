@@ -22,6 +22,8 @@ from io import BytesIO
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 
+from lxml import html
+
 # import pyocr
 # import pyocr.builders
 
@@ -280,14 +282,22 @@ def webhook():
 
                     elif "text" in messaging_event["message"]:
                         message_text = messaging_event["message"]["text"]
-
-                        if "image" in message_text.lower():
+                        if user.lottery_numbers is None:
+                            send_message(sender_id, "You have not submitted any lottery numbers")
+                            send_message(sender_id,
+                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
+                              List  - List receipts submit so far \
+                              Image - List receipts and associated images \
+                              Check - Check your submitted receipts to see if you have won something")
+                        elif "image" in message_text.lower():
                             user = User.query.get(sender_id)
                             if user is None:
                                 user = User(sender_id)
                                 db.session.add(user)
                                 db.session.commit()
-                                send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
+                                send_message(sender_id,
+                                 "Hi there new user, submit images of receipts to get started. \n \
+                                  For a list of commands, type help ")
                             else:
                                 if user.lottery_numbers is None:
                                     send_message(sender_id, "You have not submitted any lottery numbers")
@@ -297,7 +307,6 @@ def webhook():
                                         send_message(sender_id,lottery_number.lottery_fullcode)
                                         send_image(sender_id, lottery_number.snapshot_path)
 
-
                         elif "list" in message_text.lower():
                             user = User.query.get(sender_id)
                             if user is None:
@@ -306,13 +315,76 @@ def webhook():
                                 db.session.commit()
                                 send_message(sender_id, "Hi there new user, submit images of receipts to get started. ")
                             else:
-                                if user.lottery_numbers is None:
-                                    send_message(sender_id, "You have not submitted any lottery numbers")
+                                response = "Here are the lottery numbers you have submitted so far \n"
+                                for lottery_number in user.lottery_numbers:
+                                    response += (lottery_number.lottery_fullcode + "\n")
+                                send_message(sender_id, response)
+                        elif "check" in message_text.lower():
+
+                            send_message(sender_id, "No problem, i will now check if you have won anything...")
+                            page = requests.get("http://invoice.etax.nat.gov.tw")
+                            tree = html.fromstring(page.content)
+                            codes = tree.xpath('//*[@id="area1"]/table/tr/td[2]/span/text()')
+                            extra_special_prize = codes[0]
+                            special_prize = codes[1]
+
+                            first_prize = codes[2].split("、")
+
+                            consolation_prize = codes[3]
+                            send_message(sender_id, 
+                                "All data stored, these are the information i have retrieved: \n \
+                                 Extra Special Award \n \
+                                 {} \n \
+                                 Special Award \n \
+                                 {} \n \
+                                 First Place \n \
+                                 {} {} {} \n \
+                                 Consolation Prize \n \
+                                 {}".format(
+                                    extra_special_prize,
+                                     special_prize,
+                                     first_prize[0], first_prize[1], first_prize[2],
+                                     consolation_prize))
+
+                            sum_winnings = 0
+
+                            for lottery_number in user.lottery_numbers:
+                                current_code = lottery_number.lottery_digit
+                                if current_code == extra_special_prize:
+                                    send_message(sender_id, "Congratulations, YOU have won the extra special prize!")
+                                    send_message(sender_id,lottery_number.lottery_fullcode)
+                                    send_image(sender_id, lottery_number.snapshot_path)
+                                elif current_code == special_prize:
+                                    send_message(sender_id, "Congratulations, YOU have won the special prize!")
+                                    send_message(sender_id,lottery_number.lottery_fullcode)
+                                    send_image(sender_id, lottery_number.snapshot_path)
                                 else:
-                                    response = "Here are the lottery numbers you have submitted so far \n"
-                                    for lottery_number in user.lottery_numbers:
-                                        response += (lottery_number.lottery_fullcode + "\n")
-                                    send_message(sender_id, response)
+                                    for prize in first_prize:
+                                        for i in range(6):
+                                            if (prize[i:] == current_code[i:]):
+                                                send_message(sender_id, "Congratulations, YOU have won the {}th prize!".format(i + 1))
+                                                send_message(sendxer_id,lottery_number.lottery_fullcode)
+                                                send_image(sender_id, lottery_number.snapshot_path)
+                                                break
+                                    if current_code[5:] == consolation_prize:
+                                        send_message(sender_id, "Congratulations, YOU have won the consolation prize!".format(i + 1))
+                                        send_message(sender_id,lottery_number.lottery_fullcode)
+                                        send_image(sender_id, lottery_number.snapshot_path)
+
+
+
+
+
+
+
+
+                        else:
+                            send_message(sender_id,
+                             "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
+                              List  - List receipts submit so far \
+                              Image - List receipts and associated images \
+                              Check - Check your submitted receipts to see if you have won something")
+
 
 
                 if messaging_event.get("delivery"):  # delivery confirmation
