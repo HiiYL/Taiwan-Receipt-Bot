@@ -316,7 +316,10 @@ def webhook():
 
                             first_prize = codes[2].split("、")
 
+                            first_prize_earnings = [40000, 10000, 4000, 1000, 200 ]
+
                             consolation_prize = codes[3]
+                            consolation_prize_earnings = [200]
                             send_message(sender_id, 
                                 '\n'.join(["All data stored, these are the information i have retrieved:",
                                     "Extra Special Award",extra_special_prize,
@@ -325,29 +328,42 @@ def webhook():
                                     "Consolation Prize", consolation_prize]))
 
                             sum_winnings = 0
-
                             for lottery_number in user.lottery_numbers:
                                 current_code = lottery_number.lottery_digit
                                 if current_code == extra_special_prize:
-                                    send_message(sender_id, "Congratulations, YOU have won the extra special prize!")
+                                    send_message(sender_id, "Congratulations, You have won the extra special prize amounting to 10 000 000 TWD!")
                                     send_message(sender_id,lottery_number.lottery_fullcode)
-                                    send_image(sender_id, lottery_number.snapshot_path)
+                                    sum_winnings += 10000000
+                                    if lottery_number.snapshot_path is not None:
+                                        send_image(sender_id, lottery_number.snapshot_path)
                                 elif current_code == special_prize:
-                                    send_message(sender_id, "Congratulations, YOU have won the special prize!")
+                                    send_message(sender_id, "Congratulations, You have won the special prize amounting to 2 000 000 TWD!")
                                     send_message(sender_id,lottery_number.lottery_fullcode)
-                                    send_image(sender_id, lottery_number.snapshot_path)
+                                    sum_winnings += 2000000
+                                    if lottery_number.snapshot_path is not None:
+                                        send_image(sender_id, lottery_number.snapshot_path)
                                 else:
+                                    won = False
                                     for prize in first_prize:
+                                        if won:
+                                            break
                                         for i in range(6):
                                             if (prize[i:] == current_code[i:]):
-                                                send_message(sender_id, "Congratulations, YOU have won the {}th prize!".format(i + 1))
-                                                send_message(sendxer_id,lottery_number.lottery_fullcode)
+                                                send_message(sender_id, "Congratulations, You have won the {}th prize amounting to {}!".format(i + 1, first_prize_earnings[i] ))
+                                                send_message(sender_id,lottery_number.lottery_fullcode)
                                                 send_image(sender_id, lottery_number.snapshot_path)
+                                                sum_winnings += first_prize_earnings[i]
+                                                won = True
                                                 break
                                     if current_code[5:] == consolation_prize:
-                                        send_message(sender_id, "Congratulations, YOU have won the consolation prize!".format(i + 1))
+                                        send_message(sender_id, "Congratulations, You have won the consolation prize amounting to 200 TWD!".format(i + 1))
                                         send_message(sender_id,lottery_number.lottery_fullcode)
                                         send_image(sender_id, lottery_number.snapshot_path)
+                                        sum_winnings += 200
+                            if sum_winnings > 0:
+                                send_image(sender_id, "In total, you have won {} :)".format(sum_winnings))
+                            else:
+                                send_image(sender_id, "Unfortunately you did not win anything :(")
                         else:
                             send_message(sender_id,
                              "Hello there, to get started, type one of the following commands or submit a photo of a receipt \n \
