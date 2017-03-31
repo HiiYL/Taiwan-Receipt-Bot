@@ -267,7 +267,9 @@ def webhook():
                                 lottery.snapshot_path = image_url
 
                                 db.session.add(lottery)
-                                send_message(sender_id, "Your receipt lottery code has been registered successfully.")
+                                # send_message(sender_id, "Your receipt lottery code has been registered successfully.")
+                                send_message_with_quickreply(sender_id, "Your receipt lottery code has been registered successfully.", filtered)
+
                             else:
                                 if lottery.users.filter_by(id=sender_id).first() is None:
                                     lottery.users.append(user)
@@ -403,6 +405,41 @@ def send_message(recipient_id, message_text):
         },
         "message": {
             "text": message_text
+        }
+    })
+    r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
+    if r.status_code != 200:
+        log(r.status_code)
+        log(r.text)
+
+def send_message_with_quickreply(recipient_id, message_text, lottery_code):
+
+    log("sending message to {recipient}: {text}".format(recipient=recipient_id, text=message_text))
+
+    params = {
+        "access_token": os.environ["PAGE_ACCESS_TOKEN"]
+    }
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = json.dumps({
+        "recipient": {
+            "id": recipient_id
+        },
+        "message": {
+            "text": message_text
+            "quick_replies":[
+                  {
+                    "content_type":"text",
+                    "title":"Acceptable",
+                    "payload":"ACCEPTABLE"
+                  },
+                  {
+                    "content_type":"text",
+                    "title":"Wrong!",
+                    "payload": lottery_code
+                  }
+            ]
         }
     })
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
