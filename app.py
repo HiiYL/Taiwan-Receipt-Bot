@@ -162,10 +162,35 @@ def webhook():
             for messaging_event in entry["messaging"]:
 
                 if messaging_event.get("message"):  # someone sent us a message
-
+                    message = messaging_event["message"]
                     sender_id = messaging_event["sender"]["id"]        # the facebook ID of the person sending you the message
                     recipient_id = messaging_event["recipient"]["id"]  # the recipient's ID, which should be your page's facebook ID
                     # message_text = messaging_event["message"]["text"]  # the message's text
+
+                    if "acceptable" in message.lower():
+                        send_message(sender_id, "Glad to be of assistance :)")
+                    elif "wrong" in message.lower():
+
+                        payload = message["quick_reply"]["payload"]
+                        Lottery.query.filter_by(lottery_digit=filtered_digits_only).first().delete()
+                        db.session.commit()
+
+                        send_message_with_quickreply(sender_id,
+                         "I do apologize, would you like to try again?",
+                         [
+                             {
+                                "content_type":"text",
+                                "title":"Try Again",
+                                "payload":payload
+                              },
+                              {
+                                "content_type":"text",
+                                "title":"Nevermind",
+                                "payload":"None"
+                              }
+                          ]
+                        )
+
                     if "attachments" in messaging_event["message"]:
                         send_message(sender_id, "Give me a moment while i process the image...")
                         image_url = messaging_event["message"]["attachments"][0]["payload"]["url"]
@@ -268,7 +293,21 @@ def webhook():
 
                                 db.session.add(lottery)
                                 # send_message(sender_id, "Your receipt lottery code has been registered successfully.")
-                                send_message_with_quickreply(sender_id, "Your receipt lottery code has been registered successfully.", filtered)
+                                send_message_with_quickreply(sender_id,
+                                 "Your receipt lottery code has been registered successfully.",
+                                 [
+                                     {
+                                        "content_type":"text",
+                                        "title":"Acceptable",
+                                        "payload":"ACCEPTABLE"
+                                      },
+                                      {
+                                        "content_type":"text",
+                                        "title":"Wrong!",
+                                        "payload": filtered_digits_only
+                                      }
+                                  ]
+                                )
 
                             else:
                                 if lottery.users.filter_by(id=sender_id).first() is None:
@@ -412,7 +451,7 @@ def send_message(recipient_id, message_text):
         log(r.status_code)
         log(r.text)
 
-def send_message_with_quickreply(recipient_id, message_text, lottery_code):
+def send_message_with_quickreply(recipient_id, message_text, quick_reply):
 
     log("sending message to {recipient}: {text}".format(recipient=recipient_id, text=message_text))
 
@@ -427,18 +466,9 @@ def send_message_with_quickreply(recipient_id, message_text, lottery_code):
             "id": recipient_id
         },
         "message": {
-            "text": message_text
+            "text": message_text,
             "quick_replies":[
-                  {
-                    "content_type":"text",
-                    "title":"Acceptable",
-                    "payload":"ACCEPTABLE"
-                  },
-                  {
-                    "content_type":"text",
-                    "title":"Wrong!",
-                    "payload": lottery_code
-                  }
+            quick_reply
             ]
         }
     })
