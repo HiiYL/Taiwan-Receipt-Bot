@@ -318,11 +318,11 @@ def webhook():
 
                             consolation_prize = codes[3]
                             send_message(sender_id, 
-                                '\n'.join("All data stored, these are the information i have retrieved:",
+                                '\n'.join(["All data stored, these are the information i have retrieved:",
                                     "Extra Special Award",extra_special_prize,
                                     "Special Award", special_prize,
                                     "First Place", ' '.join([first_prize[0], first_prize[1], first_prize[2]]),
-                                    "Consolation Prize", consolation_prize))
+                                    "Consolation Prize", consolation_prize]))
 
                             sum_winnings = 0
 
