@@ -303,25 +303,11 @@ def webhook():
                         if "acceptable" in message_text.lower():
                             send_message(sender_id, "Glad to be of assistance :)")
                         elif "wrong" in message_text.lower():
-                            payload = message_text["quick_reply"]["payload"]
-                            Lottery.query.filter_by(lottery_digit=filtered_digits_only).first().delete()
+                            payload = message["quick_reply"]["payload"]
+                            db.session.delete(Lottery.query.filter_by(lottery_digit=payload).first())
                             db.session.commit()
-
-                            send_message_with_quickreply(sender_id,
-                             "I do apologize, would you like to try again?",
-                             [
-                                 {
-                                    "content_type":"text",
-                                    "title":"Try Again",
-                                    "payload":payload
-                                  },
-                                  {
-                                    "content_type":"text",
-                                    "title":"Nevermind",
-                                    "payload":"None"
-                                  }
-                              ]
-                            )
+                            send_message(sender_id, "I do aplogize, the entry has been deleted. Resubmit another image to try again")
+                            
                         elif user is None:
                             user = User(sender_id)
                             db.session.add(user)
@@ -465,9 +451,7 @@ def send_message_with_quickreply(recipient_id, message_text, quick_reply):
         },
         "message": {
             "text": message_text,
-            "quick_replies":[
-            quick_reply
-            ]
+            "quick_replies":quick_reply
         }
     })
     r = requests.post("https://graph.facebook.com/v2.6/me/messages", params=params, headers=headers, data=data)
